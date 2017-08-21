@@ -1,0 +1,51 @@
+How to use Paged Results Control?
+
+The example below illustrates the client-server interaction between a client doing a search requesting a page size limit of 5. The entire result set returned by the server contains 21 entries.
+
+    Client sends a search request asking for paged results with a page size of 5.
+
+        // Activate paged results
+         int pageSize = 5; // 5 entries per page
+         byte[] cookie = null;
+         int total;
+         ctx.setRequestControls(new Control[]{ 
+             new PagedResultsControl(pageSize, Control.CRITICAL) });
+         // Perform the search
+         NamingEnumeration results = ctx.search("", "(objectclass=*)", 
+                                                new SearchControls());
+
+    The server responds with entries plus an indication of 21 total entries in the search result and an opaque cookie to be used by the client when retrieving subsequent pages.
+
+       // Iterate over a batch of search results sent by the server
+             while (results != null && results.hasMore()) {
+                 // Display an entry
+                 SearchResult entry = (SearchResult)results.next();
+                 System.out.println(entry.getName());
+
+                 // Handle the entry's response controls (if any)
+                 if (entry instanceof HasControls) {
+                     // ((HasControls)entry).getControls();
+                 }
+             }
+       // Examine the paged results control response 
+             Control[] controls = ctx.getResponseControls();
+             if (controls != null) {
+                 for (int i = 0; i < controls.length; i++) {
+                     if (controls[i] instanceof PagedResultsResponseControl) {
+                         PagedResultsResponseControl prrc =
+                             (PagedResultsResponseControl)controls[i];
+                         total = prrc.getResultSize();
+                         cookie = prrc.getCookie();
+                     } else {
+                         // Handle other response controls (if any)
+                     }
+                 }
+             }   
+
+    Client sends an identical search request, returning the opaque cookie, asking for the next page.
+
+      // Re-activate paged results
+             ctx.setRequestControls(new Control[]{
+                 new PagedResultsControl(pageSize, cookie, Control.CRITICAL) });
+
+    Server responds with five entries plus an indication that there are more entries The client repeats the search performed in step 4 until a null cookie is returned by the server, which indicates no more entries to be sent by the server.

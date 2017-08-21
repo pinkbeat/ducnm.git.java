@@ -1,0 +1,222 @@
+/**
+ * searchforguid.java
+ * 5 July 2001
+ * Sample JNDI application to perform a search against the Active Directory
+ * and also return the objectGUID in both binary and string formats
+ * 
+ */
+ 
+import java.util.Hashtable;
+import javax.naming.ldap.*;
+import javax.naming.directory.*;
+import javax.naming.*;
+ 
+ 
+public class searchforguid	{
+	public static void main (String[] args)	{
+	
+		Hashtable env = new Hashtable();
+		//Can use either DN, NTLM or UPN style credentials
+		String adminName = "CN=Administrator,CN=Users,DC=ANTIPODES,DC=COM";
+		//String adminName = "Administrator@ANTIPODES.COM";
+		//String adminName = "ANTIPODES\\Administrator";
+		String adminPassword = "XXXXXX";
+		String ldapURL = "ldap://myddc.antipodes.com:389";
+		
+		env.put(Context.INITIAL_CONTEXT_FACTORY,"com.sun.jndi.ldap.LdapCtxFactory");
+ 
+		//set security credentials, note using simple cleartext authentication
+		env.put(Context.SECURITY_AUTHENTICATION,"simple");
+		env.put(Context.SECURITY_PRINCIPAL,adminName);
+		env.put(Context.SECURITY_CREDENTIALS,adminPassword);
+ 
+		//specify attributes to be returned in binary format
+		env.put("java.naming.ldap.attributes.binary","objectGUID");
+ 
+		//connect to my domain controller
+		env.put(Context.PROVIDER_URL,ldapURL);
+		try {
+ 
+			//Create the initial directory context
+			LdapContext ctx = new InitialLdapContext(env,null);
+ 
+			//Create the search controls 		
+			SearchControls searchCtls = new SearchControls();
+		
+			//Specify the attributes to return
+			String returnedAtts[]={"sn","givenName","mail","objectGUID"};
+			searchCtls.setReturningAttributes(returnedAtts);
+		
+			//Specify the search scope
+			searchCtls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+ 
+			//specify the LDAP search filter
+			String searchFilter = "(&(objectClass=user)(cn=Albert Einstein))";
+ 
+			//Specify the Base for the search
+			String searchBase = "DC=Antipodes,DC=Com"; 
+ 
+			//initialize counter to total the results
+			int totalResults = 0;
+ 
+ 
+			//Search for objects using the filter
+			NamingEnumeration answer = ctx.search(searchBase, searchFilter, searchCtls);
+ 
+			//Loop through the search results
+			while (answer.hasMoreElements()) {
+				SearchResult sr = (SearchResult)answer.next();
+ 
+				totalResults++;
+ 
+				System.out.println(">>>" + sr.getName());
+ 
+				// Print out some of the attributes, catch the exception if the attributes have no values
+				Attributes attrs = sr.getAttributes();
+				if (attrs != null) {
+					try {
+						System.out.println("   name: " + attrs.get("givenName").get() + " " + attrs.get("sn").get());
+						System.out.println("   mail: " + attrs.get("mail").get());
+						byte[] GUID = (byte[])attrs.get("objectGUID").get();
+						String strGUID = "";
+						String byteGUID = "";
+						//Convert the GUID into string using the byte format
+						for (int c=0;c<GUID.length;c++) {
+							byteGUID = byteGUID + "\\" + AddLeadingZero((int)GUID[c] & 0xFF);
+						}
+						//convert the GUID into string format
+						strGUID = "{";
+						strGUID = strGUID + AddLeadingZero((int)GUID[3] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[2] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[1] & 0xFF); 
+						strGUID = strGUID + AddLeadingZero((int)GUID[0] & 0xFF);
+						strGUID = strGUID + "-";
+						strGUID = strGUID + AddLeadingZero((int)GUID[5] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[4] & 0xFF);
+						strGUID = strGUID + "-";
+						strGUID = strGUID + AddLeadingZero((int)GUID[7] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[6] & 0xFF);
+						strGUID = strGUID + "-";
+						strGUID = strGUID + AddLeadingZero((int)GUID[8] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[9] & 0xFF);
+						strGUID = strGUID + "-";
+						strGUID = strGUID + AddLeadingZero((int)GUID[10] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[11] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[12] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[13] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[14] & 0xFF);
+						strGUID = strGUID + AddLeadingZero((int)GUID[15] & 0xFF);
+						strGUID = strGUID + "}";
+						System.out.println("GUID (String format): " + strGUID);
+						System.out.println("GUID (Byte format): " + byteGUID);
+ 
+					}
+					catch (NullPointerException e)	{
+						System.err.println("Problem listing attributes: " + e);
+					}
+				
+				}
+ 
+			}
+ 
+	 		System.out.println("Total results: " + totalResults);
+			ctx.close();
+ 
+		} 
+		catch (NamingException e) {
+			System.err.println("Problem searching directory: " + e);
+		}
+	}
+ 
+	static String AddLeadingZero(int k) {
+		return (k<0xF)?"0" + Integer.toHexString(k):Integer.toHexString(k);
+	}
+ 
+}
+
+
+Now there are two ways to retrieve an object using its objectGUID.
+
+The first is to simply perform a search using the objectGUID in it's binary format. (Remember that the backslash character is an LDAP special character and must be escaped).
+
+In this case just modify your application to use a search filter that includes the binary form of the objectGUID
+//specify the LDAP search filter
+//This is the binary format of the objectGUID
+//Note that I've escaped the '\' character
+String searchFilter = "(objectGUID=\\67\\8a\\44\\7c\\3b\\92\\ee\\48\\b2\\1a\\34\\51\\f2\\f7\\58\\ca)";
+
+
+To use the string form of the search filter, in older versions of JNDI before they screwed up the LDAP name parsing  
+all you needed to do was issue a base level search using the objectGUID as the searchbase, and objectClass=* as the search filter.
+//Specify the search scope
+//Note for GUID=xxxx must use base level search
+searchCtls.setSearchScope(SearchControls.OBJECT_SCOPE);
+ 
+//specify the LDAP search filter
+//Note for GUID=xxxx must use objectClass filter
+String searchFilter = "(objectClass=*)";
+ 
+//Specify the Base for the search
+//This is the string form of the GUID without the braces
+String searchBase = "<GUID=7c448a67-923b-48ee-b21a-3451f2f758ca>";
+
+
+Unfortunately in current Java releases, this results in a InvalidNamingException because it appears that the NamingEnumeration cannot parse a dn that contains LDAP special characters, in this case the characters that enclose the GUID.
+Fortunately you can just simply retrieve the object by binding directly to it, as this sample illustrates.
+/**
+ * retrievebyguid.java
+ * 5 July 2001
+ * Sample JNDI application to retrieve an Active Directory 
+ * object using the string form of its objectGUID
+ */
+ 
+import java.util.Hashtable;
+import javax.naming.ldap.*;
+import javax.naming.directory.*;
+import javax.naming.*;
+ 
+ 
+public class retrievebyguid	{
+	public static void main (String[] args)	{
+	
+		Hashtable env = new Hashtable();
+		String adminName = "CN=Administrator,CN=Users,DC=ANTIPODES,DC=COM";
+		String adminPassword = "XXXXXX";
+		String ldapURL = "ldap://myddc.antipodes.com:389";
+		
+		env.put(Context.INITIAL_CONTEXT_FACTORY,"com.sun.jndi.ldap.LdapCtxFactory");
+ 
+		//set security credentials, note using simple cleartext authentication
+		env.put(Context.SECURITY_AUTHENTICATION,"simple");
+		env.put(Context.SECURITY_PRINCIPAL,adminName);
+		env.put(Context.SECURITY_CREDENTIALS,adminPassword);
+				
+		//connect to my domain controller
+		env.put(Context.PROVIDER_URL,ldapURL);
+		try {
+ 
+			//Create the initial directory context
+			LdapContext ctx = new InitialLdapContext(env,null);
+		
+			//Bind directly using the string form of the GUID
+			String strGUID = "<GUID=7c448a67-923b-48ee-b21a-3451f2f758ca>";
+ 
+			//Specify the attributes to return
+			String returnedAtts[]={"distinguishedName","sn","givenName","mail"};
+ 
+			Attributes attr = ctx.getAttributes(strGUID,returnedAtts);
+ 
+			//print out the retrieved attributes
+			System.out.println("DN: " + attr.get("distinguishedName").get());
+			System.out.println("Name: " + attr.get("givenName").get() + " " + attr.get("sn").get());
+			System.out.println("Mail: " + attr.get("mail").get());
+			
+			ctx.close();
+ 
+		}
+		catch (NamingException e) {
+			System.err.println("Problem searching directory: " + e);
+		}
+	}
+}
+

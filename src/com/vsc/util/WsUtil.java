@@ -20,7 +20,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ddf.EscherColorRef.SysIndexSource;
 import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import com.vsc.dto.SOAPResult;
 
@@ -45,15 +49,7 @@ public class WsUtil {
 			urlConn.connect();
 			if(urlConn.getResponseCode() == 200){
 				System.out.println(urlConn.getResponseCode());				
-				InputStream resStream = urlConn.getInputStream();
-				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-			    byte[] byteBuf = new byte[10240];
-			    int nRead = 0;
-			    while ((nRead = resStream.read(byteBuf, 0, byteBuf.length)) != -1) {
-	        	    buffer.write(byteBuf, 0, nRead);
-	            }
-				result.setSoapResult(buildXmlResult(buffer.toString()));				
-				writeFile(result.getSoapResult(), filename);				   
+							   
 			}else{
 				System.out.println("ResponseCode = "+urlConn.getResponseCode());
 				result.setRESPONSE_CODE(urlConn.getResponseCode());
@@ -88,8 +84,8 @@ public class WsUtil {
 	public static SOAPResult doSendWS(String sec_url, String wsurl, String postMsg){	
 		SOAPResult result = new SOAPResult();
 		try {
-//			String sesionId = "LtpaToken=AAECAzU4NTI1MTI1NTg1MjdCNTVDTj1EYW5nIE1pbmggQ2hpbmgvT1U9VlBUVy9PPURDUy9DPVZO/0+EJOT3wInsH1k4AmJRtIn6+VQ=";
-			String sesionId = doLoginWS(sec_url);
+			String sesionId = null;
+			if(sec_url!=null) sesionId = doLoginWS(sec_url);
 			HttpURLConnection.setFollowRedirects(false);		
 
 			myURL = new URL(wsurl);
@@ -99,26 +95,23 @@ public class WsUtil {
 			urlConn.setDoInput(true);
 			urlConn.setRequestProperty("Content-Length",Integer.toString(postMsg.length()));
 			urlConn.setRequestProperty("SOAPAction", ""); // hportal required
-			urlConn.setRequestProperty("Cookie", sesionId);
+			if(sesionId!=null)	urlConn.setRequestProperty("Cookie", sesionId);
 			writer = new PrintWriter(urlConn.getOutputStream());
 			writer.print(postMsg);
 			writer.flush();
 			urlConn.connect();
+			String rs = null;
 			if(urlConn.getResponseCode() == 200){
-				System.out.println(urlConn.getResponseCode());				
-				InputStream resStream = urlConn.getInputStream();
-				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-			    byte[] byteBuf = new byte[10240];
-			    int nRead = 0;
-			    while ((nRead = resStream.read(byteBuf, 0, byteBuf.length)) != -1) {
-			    	buffer.write(byteBuf, 0, nRead);
-	        	}				
-			    result.setSoapResult(buildXmlResult(buffer.toString()));
-				writeFile(result.getSoapResult(), filename);
+				rs = FileUtil.readInputStream(urlConn.getInputStream());						   
 			}else{
 				System.out.println("ResponseCode = "+urlConn.getResponseCode());
+				rs = FileUtil.readInputStream(urlConn.getErrorStream());					
 				result.setERROR_CODE(-2);
+				result.setRESPONSE_CODE(urlConn.getResponseCode());
 			}
+//			result.setSoapResult(buildXmlResult(rs));
+			result.setSoapResult(XmlUtil.transformNode((XmlUtil.parse(rs)).getDocumentElement()));
+			writeFile(result.getSoapResult(), filename);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -175,11 +168,31 @@ public class WsUtil {
 	private static void writeFile(String content, String filename){
 		FileOutputStream outputStream;
 		try {
-			outputStream = new FileOutputStream(new File(filename));			
-		    outputStream.write(buildXmlResult(content).getBytes());
+			outputStream = new FileOutputStream(new File(filename));
+			outputStream.write(XmlUtil.transformNode((XmlUtil.parse(content)).getDocumentElement()).getBytes());
+//		    outputStream.write(buildXmlResult(content).getBytes());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		   
+	}
+	public static void showSoapResult(String content){
+		try {
+			Document document = XmlUtil.parse(content);
+			Element root = document.getDocumentElement();
+			Element body = XmlUtil.getElementByPath(root, "soapenv:Body/soapenv:Fault");
+			if(body != null) {
+				System.out.println("faultcode = "+XmlUtil.getValueByPath(body, "faultcode"));
+				System.out.println("faultstring = "+XmlUtil.getValueByPath(body, "faultstring"));
+			}else {
+				System.out.println(content);
+			}
+			
+//		    outputStream.write(buildXmlResult(content).getBytes());
+		
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

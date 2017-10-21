@@ -5,11 +5,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.json.simple.parser.JSONParser;
+//import org.json.simple.parser.JSONParser;
 
 //import net.sf.json.JSONArray;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
 //import net.sf.json.JSONObject;
 /*
  * using JSON.simple
@@ -26,9 +26,9 @@ public class JSONTest {
         obj.put("age", new Integer(100));
 
         JSONArray list = new JSONArray();
-        list.add("msg 1");
-        list.add("msg 2");
-        list.add("msg 3");
+        list.put("msg 1");
+        list.put("msg 2");
+        list.put("msg 3");
 
         obj.put("messages", list);
 
@@ -71,10 +71,7 @@ public class JSONTest {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (org.json.simple.parser.ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
+        }
 
 	}
 }

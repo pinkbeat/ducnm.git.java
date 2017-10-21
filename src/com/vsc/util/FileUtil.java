@@ -1,6 +1,7 @@
 package com.vsc.util;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -125,6 +126,33 @@ public class FileUtil {
 		{
 			br = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF-8"));
 			//br=new BufferedReader(new FileReader(file));
+			String line;
+			sb=new StringBuffer();
+			while ((line=br.readLine())!=null) {
+				sb.append(line+"\n");
+		    }
+	    }
+		catch (Exception e) 
+		{
+		 	e.printStackTrace();
+		} 
+		finally 
+		{
+			try 
+			{
+			  if (br !=null) br.close();
+			}
+			catch (Exception ex){}
+	    }
+		return sb.toString();
+	}
+	public static String readFile(File file, String chartset)
+	{
+		StringBuffer sb=null;
+		BufferedReader br=null;
+		try 
+		{
+			br = new BufferedReader(new InputStreamReader(new FileInputStream(file),chartset));
 			String line;
 			sb=new StringBuffer();
 			while ((line=br.readLine())!=null) {
@@ -294,6 +322,15 @@ public class FileUtil {
 	    		System.out.println("File is deleted : " + file.getAbsolutePath());
 	    	}
 	    }
+		public static String readInputStream(InputStream resStream) throws IOException {
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+		    byte[] byteBuf = new byte[10240];
+		    int nRead = 0;
+		    while ((nRead = resStream.read(byteBuf, 0, byteBuf.length)) != -1) {
+        	    buffer.write(byteBuf, 0, nRead);
+            }
+			return buffer.toString("UTF-8");	
+		}
 	 public static void main(String args[])
 	 {
 //		 boolean rt=validateXMLSchema("C:\\xmldata\\checkout1.xsd","C:\\xmldata\\CheckOut.xml");

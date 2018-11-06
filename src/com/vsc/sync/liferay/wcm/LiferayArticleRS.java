@@ -217,9 +217,9 @@ public class LiferayArticleRS {
 	
 	public static void main(String[] args) throws Exception {
 //		ExcelUtil.generateErrorFile(errorlogfile, contentfile, errorcontentfile, ext);
-		createArticleViaJSWS();
+//		createArticleViaJSWS();
 //		unlinkArticleWithCategory();
-//		linkArticleWithCategory();
+		linkArticleWithCategory();
 //		deleteArticleViaJSWS();
 		
 	

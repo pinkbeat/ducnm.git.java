@@ -29,12 +29,12 @@ public class LiferayRestServiceUtil {
 	 static DefaultHttpClient httpclient;
 	 public static void initConnection(){
 //	     	targetHost = new HttpHost("123.31.40.162", 10080, "http");
-		 	targetHost = new HttpHost("14.225.6.70", 80, "http");
+		 	targetHost = new HttpHost("bvtn.org.vn", 80, "http");
 	        httpclient = new DefaultHttpClient();
 	        httpclient.getCredentialsProvider().setCredentials(
 		        new AuthScope(targetHost.getHostName(), targetHost.getPort()),
 //		        new UsernamePasswordCredentials("congthongtinboyte@gmail.com", "18273645a@"));
-		        new UsernamePasswordCredentials("trungnv@vnpt.vn", "123456a@"));
+		        new UsernamePasswordCredentials("ducnm", "123"));
 	 }
 	 public static void addArticle() throws Exception {
 	        // Create AuthCache instance
@@ -134,8 +134,8 @@ public class LiferayRestServiceUtil {
 	        params.add(new BasicNameValuePair("serviceMethodName", "deleteArticle"));
 	        params.add(new BasicNameValuePair("serviceParameterTypes", "[long,java.lang.String,java.lang.String,com.liferay.portal.service.ServiceContext]"));
 	        params.add(new BasicNameValuePair("serviceParameters", "[groupId,articleId,articleURL,serviceContext]"));
-	        params.add(new BasicNameValuePair("groupId", "112015"));
-	        params.add(new BasicNameValuePair("articleId", "120040"));
+	        params.add(new BasicNameValuePair("groupId", "20181"));
+	        params.add(new BasicNameValuePair("articleId", "580378"));
 	        params.add(new BasicNameValuePair("articleURL", "articleURL"));
 	        params.add(new BasicNameValuePair("serviceContext", "{}"));
 
@@ -168,7 +168,7 @@ public class LiferayRestServiceUtil {
 //	        params.add(new BasicNameValuePair("serviceParameters", "[groupId,articleId]"));
 	        params.add(new BasicNameValuePair("serviceParameters", "id"));
 //	        params.add(new BasicNameValuePair("groupId", "10156"));
-	        params.add(new BasicNameValuePair("id", "114509"));
+	        params.add(new BasicNameValuePair("id", "578378"));
 	        UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, "UTF-8");
 	        post.setEntity(entity);
 
@@ -205,10 +205,10 @@ public class LiferayRestServiceUtil {
         public static void main(String[] args) throws Exception {
         	initConnection();
             // Create AuthCache instance
-            testJsonWS();
+//            testJsonWS();
 //        	getArticle();
 //        	addArticle();
-//        	removeArticle();
+        	removeArticle();
         }
 	    
 }
